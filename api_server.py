@@ -11,7 +11,7 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append('{}'.format(ROOT_DIR))
 sys.path.append('{}/third_party/Matcha-TTS'.format(ROOT_DIR))
 from cosyvoice.cli.cosyvoice import CosyVoice, CosyVoice2
-
+from cosyvoice.utils.file_utils import load_wav
 from cosyvoice.utils.common import set_all_random_seed
 import torchaudio
 from concurrent.futures import ThreadPoolExecutor
@@ -30,7 +30,7 @@ app.add_middleware(
 
 sft_spk = []
 
-
+cosyvoice = None
 class SynthesizeRequest(BaseModel):
     text: str
     spk_id: str
@@ -62,7 +62,21 @@ def run_synthesize_task(task_id, req_dict):
         output_dir = 'runtime/audio_outputs'
         os.makedirs(output_dir, exist_ok=True)
         file_list = []
-        for i, result in enumerate(cosyvoice.inference_zero_shot(text,'', '', zero_shot_spk_id='my_zero_shot_spk', stream=False)):
+        prompt_speech_16k = load_wav('./1.WAV', 16000)
+        prompt_text = '汗流浃背，汗流浃背啊，我说我说我说能说的吧'
+        # assert cosyvoice.add_zero_shot_spk(prompt_text, prompt_speech_16k, 'my_zero_shot_spk') is True
+        # for i, j in enumerate(cosyvoice.inference_zero_shot('收到好友从远方寄来的生日礼物，那份意外的惊喜与深深的祝福让我心中充满了甜蜜的快乐，笑容如花儿般绽放。', '', '', zero_shot_spk_id='my_zero_shot_spk', stream=False)):
+        #     torchaudio.save('zero_shot_{}.wav'.format(i), j['tts_speech'], cosyvoice.sample_rate)
+        # cosyvoice.save_spkinfo()
+        #完成存储
+        # sft_spk = cosyvoice.list_available_spks()
+        # for spk in sft_spk:
+        #     logging.info(spk)
+        # if spk_id not in sft_spk:
+        #     raise ValueError(f"音色 {spk_id} 不在可用列表中")
+        # spk_id = 'my_zero_shot_spk'
+        for i, result in enumerate(cosyvoice.inference_zero_shot(text, prompt_text, prompt_speech_16k, stream=False)):
+        # for i, result in enumerate(cosyvoice.inference_sft(text, spk_id, stream=False, speed=speed)):
             audio = result['tts_speech']
             if audio is None:
                 raise RuntimeError('语音合成失败')
@@ -76,6 +90,9 @@ def run_synthesize_task(task_id, req_dict):
                 "sample_rate": cosyvoice.sample_rate
             }
     except Exception as e:
+        #打印调用栈
+        import traceback
+        traceback.print_exc()
         with task_store_lock:
             task_store[task_id]["status"] = "failed"
             task_store[task_id]["result"] = str(e)
@@ -105,12 +122,12 @@ def synthesize_status(task_id: str):
 if __name__ == '__main__':
     # 初始化模型（可根据需要切换 CosyVoice 或 CosyVoice2）
     MODEL_DIR = '/home/wyh/git/CosyVoice/pretrained_models/CosyVoice2-0.5B'
-    cosyvoice = None
+
     try:
         cosyvoice = CosyVoice(MODEL_DIR)
     except Exception:
         try:
-            cosyvoice = CosyVoice2(MODEL_DIR)
+            cosyvoice = CosyVoice2(MODEL_DIR,load_jit=False, load_trt=False, fp16=False, use_flow_cache=False)
         except Exception:
             raise TypeError('no valid model_type!')
 
