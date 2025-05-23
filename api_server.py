@@ -62,8 +62,8 @@ def run_synthesize_task(task_id, req_dict):
         output_dir = 'runtime/audio_outputs'
         os.makedirs(output_dir, exist_ok=True)
         file_list = []
-        prompt_speech_16k = load_wav('./1.WAV', 16000)
-        prompt_text = '汗流浃背，汗流浃背啊，我说我说我说能说的吧'
+        prompt_speech_16k = load_wav('./test.wav', 16000)
+        prompt_text = '百度百科是百度公司在线运营的一部半开放式中文网络百科全书。'
         # assert cosyvoice.add_zero_shot_spk(prompt_text, prompt_speech_16k, 'my_zero_shot_spk') is True
         # for i, j in enumerate(cosyvoice.inference_zero_shot('收到好友从远方寄来的生日礼物，那份意外的惊喜与深深的祝福让我心中充满了甜蜜的快乐，笑容如花儿般绽放。', '', '', zero_shot_spk_id='my_zero_shot_spk', stream=False)):
         #     torchaudio.save('zero_shot_{}.wav'.format(i), j['tts_speech'], cosyvoice.sample_rate)
@@ -122,6 +122,7 @@ def synthesize_status(task_id: str):
 if __name__ == '__main__':
     # 初始化模型（可根据需要切换 CosyVoice 或 CosyVoice2）
     MODEL_DIR = '/home/wyh/git/CosyVoice/pretrained_models/CosyVoice2-0.5B'
+    # MODEL_DIR = '/root/git/CosyVoice/pretrained_models/CosyVoice2-0.5B'
 
     try:
         cosyvoice = CosyVoice(MODEL_DIR)
